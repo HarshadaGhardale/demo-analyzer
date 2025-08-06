@@ -9,15 +9,20 @@ import { convertMarkdownToDocx } from "../utils/docGenerator.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 export const analyzeResume = async (req, res) => {
   try {
+    // Initialize Groq client inside function
+    if (!process.env.GROQ_API_KEY) {
+      return res.status(500).json({ error: "GROQ_API_KEY is missing in .env" });
+    }
+    const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
     const filePath = req.file.path;
     const dataBuffer = fs.readFileSync(filePath);
     const pdfData = await pdfParse(dataBuffer);
     const resumeText = pdfData.text;
 
+    // ===== Call Groq API =====
     const suggestionsResponse = await client.chat.completions.create({
       model: "llama3-70b-8192",
       messages: [
@@ -34,7 +39,7 @@ export const analyzeResume = async (req, res) => {
       suggestionsResponse.choices[0]?.message?.content || "No response from AI.";
     const [suggestions, improvedVersion] = resultText.split("**Improved Version:**");
 
-    // Generate Word document
+    // ===== Generate Word document =====
     const doc = new Document({
       sections: [
         {
@@ -47,13 +52,20 @@ export const analyzeResume = async (req, res) => {
     });
 
     const buffer = await Packer.toBuffer(doc);
+
+    // ===== Ensure downloads directory =====
+    const downloadsPath = path.resolve(__dirname, "../downloads");
+    if (!fs.existsSync(downloadsPath)) fs.mkdirSync(downloadsPath);
+
+    // ===== Save file =====
     const fileName = `improved_resume_${Date.now()}.docx`;
-    const outputPath = path.join(__dirname, "../downloads", fileName);
+    const outputPath = path.join(downloadsPath, fileName);
     fs.writeFileSync(outputPath, buffer);
 
+    // ===== Send JSON (Frontend will download using /download/:filename) =====
     res.json({
       suggestions: suggestions?.trim() || "No suggestions available.",
-      downloadLink: `/download/${fileName}`,
+      fileName: fileName
     });
   } catch (error) {
     console.error("Error analyzing resume:", error);
