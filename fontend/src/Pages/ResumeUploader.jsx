@@ -1,0 +1,60 @@
+import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
+const ResumeUploader = () => {
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleFileChange = (e) => setFile(e.target.files[0]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!file) return alert("Please upload a resume!");
+
+    const formData = new FormData();
+    formData.append("resume", file);
+
+    try {
+      setLoading(true);
+      const res = await axios.post("http://localhost:5000/analyze-resume", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setLoading(false);
+
+      // Pass suggestions & fileName to analysis page
+      navigate("/analysis", { state: res.data });
+    } catch (err) {
+      setLoading(false);
+      console.error(err);
+      alert("Error analyzing resume");
+    }
+  };
+
+  return (
+    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
+      <h2 style={{ marginBottom: "10px" }}>Resume Analyzer</h2>
+      <form onSubmit={handleSubmit}>
+        <input type="file" accept=".pdf" onChange={handleFileChange} />
+        <button
+          type="submit"
+          style={{
+            marginLeft: "10px",
+            padding: "8px 20px",
+            background: "#2563eb",
+            color: "#fff",
+            border: "none",
+            borderRadius: "5px",
+            cursor: "pointer",
+          }}
+          disabled={loading}
+        >
+          {loading ? "Analyzing..." : "Upload & Analyze"}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default ResumeUploader;

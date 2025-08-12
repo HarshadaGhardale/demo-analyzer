@@ -7,7 +7,10 @@ import cors from "cors";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import mongoose from "mongoose";
+
 import resumeRoutes from "./routes/resumeRoutes.js";
+import contactRoutes from "./routes/contactRouter.js"; 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +21,15 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
+
 // Ensure folders exist
 const uploadsDir = path.resolve(__dirname, "uploads");
 const downloadsDir = path.resolve(__dirname, "downloads");
@@ -26,6 +38,7 @@ if (!fs.existsSync(downloadsDir)) fs.mkdirSync(downloadsDir);
 
 // Routes
 app.use("/", resumeRoutes);
+app.use("/api/contact", contactRoutes); // ✅ added
 
 // Serve downloads statically
 app.use("/download", express.static(downloadsDir));
