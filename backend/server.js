@@ -11,6 +11,7 @@ import mongoose from "mongoose";
 
 import resumeRoutes from "./routes/resumeRoutes.js";
 import contactRoutes from "./routes/contactRouter.js"; 
+import userRoutes from "./routes/userRoutes.js"
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,7 +39,8 @@ if (!fs.existsSync(downloadsDir)) fs.mkdirSync(downloadsDir);
 
 // Routes
 app.use("/", resumeRoutes);
-app.use("/api/contact", contactRoutes); // ✅ added
+app.use("/api/contact", contactRoutes); 
+app.use("/api/user",userRoutes);
 
 // Serve downloads statically
 app.use("/download", express.static(downloadsDir));
